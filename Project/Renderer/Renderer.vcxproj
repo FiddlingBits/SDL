@@ -98,7 +98,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Main.c" />
+    <ClCompile Include="Source\application.c" />
+    <ClCompile Include="Source\display.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Source\display.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
