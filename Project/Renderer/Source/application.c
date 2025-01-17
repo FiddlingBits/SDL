@@ -17,6 +17,7 @@ static bool application_isRunning = false;
  ****************************************************************************************************/
 
 static void application_processInput(void);
+static void application_update(void);
 
 /****************************************************************************************************
  * Function Definition (Public)
@@ -33,8 +34,7 @@ int main(int argc, char *argv[])
     {
         /* Render */
         application_processInput();
-        display_fillColorBuffer(0xFF000000);
-        display_drawRectangle(100, 50, 250, 125, 0xFFFF0000);
+        application_update();
         display_render();
     }
 
@@ -68,4 +68,13 @@ static void application_processInput(void)
             application_isRunning = false;
             break;
     }
+}
+
+/*** Update ***/
+static void application_update(void)
+{
+    /*** Update ***/
+    display_fillColorBuffer(0xFF000000);
+    display_drawRectangle(100, 50, 250, 125, 0xFFFF0000);
+    display_setPixel(20, 20, 0xFF00FF00);
 }

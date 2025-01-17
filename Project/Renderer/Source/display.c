@@ -76,23 +76,23 @@ void display_deinit(void)
 /*** Draw Rectangle ***/
 void display_drawRectangle(const int X, const int Y, const int Width, const int Height, const uint32_t Color)
 {
-    int col, row;
+    int x, y;
 
     /*** Draw Rectangle ***/
-    for(col = X; col < (X + Width); col++)
-        for(row = Y; row < (Y + Height); row++)
-            display_colorBuffer[(row * display_width) + col] = Color;
+    for(x = X; x < (X + Width); x++)
+        for(y = Y; y < (Y + Height); y++)
+            display_setPixel(x, y, Color);
 }
 
 /*** Fill Color Buffer ***/
 void display_fillColorBuffer(const uint32_t Color)
 {
-    int col, row;
+    int x, y;
 
     /*** Fill Color Buffer ***/
-    for(row = 0; row < display_height; row++)
-        for(col = 0; col < display_width; col++)
-            display_colorBuffer[(row * display_width) + col] = Color;
+    for(x = 0; x < display_width; x++)
+        for(y = 0; y < display_height; y++)
+            display_colorBuffer[(y * display_width) + x] = Color;
 }
 
 /*** Render ***/
@@ -102,4 +102,11 @@ void display_render(void)
     (void)SDL_UpdateTexture(display_colorBufferTexture, NULL, display_colorBuffer, sizeof(*display_colorBuffer) * display_width);
     (void)SDL_RenderCopy(display_renderer, display_colorBufferTexture, NULL, NULL);
     SDL_RenderPresent(display_renderer);
+}
+
+/*** Set Pixel ***/
+void display_setPixel(const int X, const int Y, const uint32_t Color)
+{
+    if((X >= 0) && (X < display_width) && (Y >= 0) && (Y < display_height))
+        display_colorBuffer[(Y * display_width) + X] = Color;
 }
