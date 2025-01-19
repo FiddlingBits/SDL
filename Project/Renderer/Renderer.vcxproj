@@ -100,9 +100,11 @@
   <ItemGroup>
     <ClCompile Include="Source\application.c" />
     <ClCompile Include="Source\display.c" />
+    <ClCompile Include="Source\vector.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\display.h" />
+    <ClInclude Include="Source\vector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,20 +5,24 @@
 #pragma once
 
 /****************************************************************************************************
- * Include
+ * Structure
  ****************************************************************************************************/
 
-#include <stdbool.h>
-#include <stdint.h>
+/*** Vector 2D ***/
+typedef struct
+{
+    float x;
+    float y;
+} vector_2d;
+
+/*** Vector 3D ***/
+typedef struct
+{
+    float x;
+    float y;
+    float z;
+} vector_3d;
 
 /****************************************************************************************************
  * Function Prototype
  ****************************************************************************************************/
-
-extern void display_deinit(void);
-extern void display_drawRectangle(const int X, const int Y, const int Width, const int Height, const uint32_t Color);
-extern void display_fillColorBuffer(const uint32_t Color);
-extern void display_getDimensions(int* const width, int* const height);
-extern bool display_init(void);
-extern void display_render(void);
-extern void display_setPixel(const int X, const int Y, const uint32_t Color);
