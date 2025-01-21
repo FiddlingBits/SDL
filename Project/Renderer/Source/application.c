@@ -9,6 +9,7 @@
                                        )
 #define APPLICATION_N_CUBE_SIDE_POINTS (9)
 #define APPLICATION_FOV_FACTOR         (1000)
+#define APPLICATION_FPS                (30)
 
 /****************************************************************************************************
  * Include
@@ -23,11 +24,10 @@
  * Variable
  ****************************************************************************************************/
 
-static bool application_isRunning = false;
+static bool application_isRunning;
 static vector_3d application_cameraPosition;
 static vector_3d application_cubePoints[APPLICATION_N_CUBE_POINTS];
 static vector_3d application_cubeRotation;
-static vector_2d application_projectedPoints[APPLICATION_N_CUBE_POINTS];
 
 /****************************************************************************************************
  * Function Prototype
@@ -45,7 +45,7 @@ static void application_update(void);
 int main(int argc, char *argv[])
 {
     /*** Initialize ***/
-    application_isRunning = display_init();
+    application_isRunning = display_init(APPLICATION_FPS);
 
     /*** Set Up ***/
     application_setUp();
@@ -128,6 +128,7 @@ static void application_setUp(void)
 static void application_update(void)
 {
     int height, i, width;
+    vector_2d projectedPoints[APPLICATION_N_CUBE_POINTS];
     vector_3d transformedPoint;
 
     /*** Update ***/
@@ -149,18 +150,18 @@ static void application_update(void)
         transformedPoint = vector_3dRotateZ(&transformedPoint, application_cubeRotation.z);
 
         /* Project */
-        application_projectedPoints[i].x = (APPLICATION_FOV_FACTOR * transformedPoint.x);
-        application_projectedPoints[i].x /= (transformedPoint.z + application_cameraPosition.z);
-        application_projectedPoints[i].y = (APPLICATION_FOV_FACTOR * transformedPoint.y);
-        application_projectedPoints[i].y /= (transformedPoint.z + application_cameraPosition.z);
+        projectedPoints[i].x = (APPLICATION_FOV_FACTOR * transformedPoint.x);
+        projectedPoints[i].x /= (transformedPoint.z + application_cameraPosition.z);
+        projectedPoints[i].y = (APPLICATION_FOV_FACTOR * transformedPoint.y);
+        projectedPoints[i].y /= (transformedPoint.z + application_cameraPosition.z);
     }
 
     /* Draw Projected Cube Points */
     for(i = 0; i < APPLICATION_N_CUBE_POINTS; i++)
     {
         display_drawRectangle(
-            (int)application_projectedPoints[i].x + (width / 2),
-            (int)application_projectedPoints[i].y + (height / 2),
+            (int)projectedPoints[i].x + (width / 2),
+            (int)projectedPoints[i].y + (height / 2),
             5,
             5,
             0xFFFF0000

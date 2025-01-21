@@ -12,6 +12,8 @@
 
 static uint32_t* display_colorBuffer = NULL;
 static SDL_Texture* display_colorBufferTexture = NULL;
+static int display_fpsDelay = 0;
+static uint32_t display_previousMilliseconds = 0;
 static SDL_Renderer* display_renderer = NULL;
 static SDL_Window* display_window = NULL;
 static int display_width = 0, display_height = 0;
@@ -64,7 +66,7 @@ void display_getDimensions(int* const width, int* const height)
 }
 
 /*** Initialize ***/
-bool display_init(void)
+bool display_init(const int FPS)
 {
     SDL_DisplayMode display_mode;
 
@@ -115,13 +117,25 @@ bool display_init(void)
         display_height
     );
 
+    /* FPS */
+    display_fpsDelay = 1000 / FPS;
+
     return true;
 }
 
 /*** Render ***/
 void display_render(void)
 {
+    int delayMilliseconds;
+
     /*** Render ***/
+    /* Delay */
+    delayMilliseconds = (display_previousMilliseconds + display_fpsDelay) - SDL_GetTicks();
+    if(delayMilliseconds > 0)
+        SDL_Delay(delayMilliseconds);
+    display_previousMilliseconds = SDL_GetTicks();
+
+    /* Render */
     (void)SDL_UpdateTexture(
         display_colorBufferTexture,
         NULL,
