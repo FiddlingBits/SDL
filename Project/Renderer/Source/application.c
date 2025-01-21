@@ -8,7 +8,7 @@
                                             APPLICATION_N_CUBE_SIDE_POINTS   \
                                        )
 #define APPLICATION_N_CUBE_SIDE_POINTS (9)
-#define APPLICATION_FOV_FACTOR         (2000)
+#define APPLICATION_FOV_FACTOR         (1000)
 
 /****************************************************************************************************
  * Include
@@ -26,6 +26,7 @@
 static bool application_isRunning = false;
 static vector_3d application_cameraPosition;
 static vector_3d application_cubePoints[APPLICATION_N_CUBE_POINTS];
+static vector_3d application_cubeRotation;
 static vector_2d application_projectedPoints[APPLICATION_N_CUBE_POINTS];
 
 /****************************************************************************************************
@@ -116,39 +117,53 @@ static void application_setUp(void)
             }
         }
     }
-
-    /* Projected Points */
-    for(i = 0; i < APPLICATION_N_CUBE_POINTS; i++)
-    {
-        application_projectedPoints[i].x = (APPLICATION_FOV_FACTOR * application_cubePoints[i].x);
-        application_projectedPoints[i].x /= (application_cubePoints[i].z + application_cameraPosition.z);
-        application_projectedPoints[i].y = (APPLICATION_FOV_FACTOR * application_cubePoints[i].y);
-        application_projectedPoints[i].y /= (application_cubePoints[i].z + application_cameraPosition.z);
-    }
+    
+    /* Cube Rotation */
+    application_cubeRotation.x = 0.0;
+    application_cubeRotation.y = 0.0;
+    application_cubeRotation.z = 0.0;
 }
 
 /*** Update ***/
 static void application_update(void)
 {
     int height, i, width;
+    vector_3d transformedPoint;
 
     /*** Update ***/
     /* Set Up */
     display_fillColorBuffer(0xFF000000);
     display_getDimensions(&width, &height);
 
+    /* Cube Rotation */
+    application_cubeRotation.x += 0.01;
+    application_cubeRotation.y += 0.01;
+    application_cubeRotation.z += 0.01;
+
+    /* Projected Points */
+    for(i = 0; i < APPLICATION_N_CUBE_POINTS; i++)
+    {
+        /* Rotate */
+        transformedPoint = vector_3dRotateX(&application_cubePoints[i], application_cubeRotation.x);
+        transformedPoint = vector_3dRotateY(&transformedPoint, application_cubeRotation.y);
+        transformedPoint = vector_3dRotateZ(&transformedPoint, application_cubeRotation.z);
+
+        /* Project */
+        application_projectedPoints[i].x = (APPLICATION_FOV_FACTOR * transformedPoint.x);
+        application_projectedPoints[i].x /= (transformedPoint.z + application_cameraPosition.z);
+        application_projectedPoints[i].y = (APPLICATION_FOV_FACTOR * transformedPoint.y);
+        application_projectedPoints[i].y /= (transformedPoint.z + application_cameraPosition.z);
+    }
+
     /* Draw Projected Cube Points */
     for(i = 0; i < APPLICATION_N_CUBE_POINTS; i++)
     {
         display_drawRectangle(
-            application_projectedPoints[i].x + (width / 2),
-            application_projectedPoints[i].y + (height / 2),
+            (int)application_projectedPoints[i].x + (width / 2),
+            (int)application_projectedPoints[i].y + (height / 2),
             5,
             5,
             0xFFFF0000
         );
     }
-
-    /* Render */
-    display_render();
 }
