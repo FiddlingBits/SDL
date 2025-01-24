@@ -98,13 +98,17 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\mesh.c" />
     <ClCompile Include="Source\application.c" />
     <ClCompile Include="Source\display.c" />
     <ClCompile Include="Source\vector.c" />
+    <ClCompile Include="Source\triangle.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\mesh.h" />
     <ClInclude Include="Source\display.h" />
     <ClInclude Include="Source\vector.h" />
+    <ClInclude Include="Source\triangle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

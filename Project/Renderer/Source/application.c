@@ -2,22 +2,19 @@
  * Define
  ****************************************************************************************************/
 
-#define APPLICATION_N_CUBE_POINTS      (                                     \
-                                            APPLICATION_N_CUBE_SIDE_POINTS * \
-                                            APPLICATION_N_CUBE_SIDE_POINTS * \
-                                            APPLICATION_N_CUBE_SIDE_POINTS   \
-                                       )
-#define APPLICATION_N_CUBE_SIDE_POINTS (9)
-#define APPLICATION_FOV_FACTOR         (1000)
-#define APPLICATION_FPS                (30)
+#define APPLICATION_FOV_FACTOR (1000)
+#define APPLICATION_FPS        (30)
 
 /****************************************************************************************************
  * Include
  ****************************************************************************************************/
 
 #include "display.h"
+#include "mesh.h"
 #include <SDL.h>
 #include <stdbool.h>
+#include <string.h>
+#include "triangle.h"
 #include "vector.h"
 
 /****************************************************************************************************
@@ -26,8 +23,9 @@
 
 static bool application_isRunning;
 static vector_3d application_cameraPosition;
-static vector_3d application_cubePoints[APPLICATION_N_CUBE_POINTS];
 static vector_3d application_cubeRotation;
+static triangle_face application_cubeFaces[MESH_N_CUBE_FACES];
+static vector_3d application_cubePoints[MESH_N_CUBE_POINTS];
 
 /****************************************************************************************************
  * Function Prototype
@@ -94,29 +92,14 @@ static void application_processInput(void)
 /*** Set Up ***/
 static void application_setUp(void)
 {
-    int i, x, y, z;
-
     /*** Set Up ***/
     /* Camera (Left-Handed Coordinate System) */
     application_cameraPosition.x = 0.0;
     application_cameraPosition.y = 0.0;
     application_cameraPosition.z = -5.0;
 
-    /* Cube Points */
-    i = 0;
-    for(x = 0; x < APPLICATION_N_CUBE_SIDE_POINTS; x++)
-    {
-        for(y = 0; y < APPLICATION_N_CUBE_SIDE_POINTS; y++)
-        {
-            for(z = 0; z < APPLICATION_N_CUBE_SIDE_POINTS; z++)
-            {
-                application_cubePoints[i].x = -1.0 + (x * 0.25);
-                application_cubePoints[i].y = -1.0 + (y * 0.25);
-                application_cubePoints[i].z = -1.0 + (z * 0.25);
-                i++;
-            }
-        }
-    }
+    /* Cube Faces And Points */
+    mesh_getCube(application_cubeFaces, application_cubePoints);
     
     /* Cube Rotation */
     application_cubeRotation.x = 0.0;
@@ -127,9 +110,9 @@ static void application_setUp(void)
 /*** Update ***/
 static void application_update(void)
 {
-    int height, i, width;
-    vector_2d projectedPoints[APPLICATION_N_CUBE_POINTS];
-    vector_3d transformedPoint;
+    int height, i, j, width;
+    vector_3d facePoints[3], transformedPoint;
+    triangle_triangle triangle;
 
     /*** Update ***/
     /* Set Up */
@@ -141,30 +124,48 @@ static void application_update(void)
     application_cubeRotation.y += 0.01;
     application_cubeRotation.z += 0.01;
 
-    /* Projected Points */
-    for(i = 0; i < APPLICATION_N_CUBE_POINTS; i++)
+    /* Transform Cube Face Points */
+    for(i = 0; i < MESH_N_CUBE_FACES; i++)
     {
-        /* Rotate */
-        transformedPoint = vector_3dRotateX(&application_cubePoints[i], application_cubeRotation.x);
-        transformedPoint = vector_3dRotateY(&transformedPoint, application_cubeRotation.y);
-        transformedPoint = vector_3dRotateZ(&transformedPoint, application_cubeRotation.z);
-
-        /* Project */
-        projectedPoints[i].x = (APPLICATION_FOV_FACTOR * transformedPoint.x);
-        projectedPoints[i].x /= (transformedPoint.z + application_cameraPosition.z);
-        projectedPoints[i].y = (APPLICATION_FOV_FACTOR * transformedPoint.y);
-        projectedPoints[i].y /= (transformedPoint.z + application_cameraPosition.z);
-    }
-
-    /* Draw Projected Cube Points */
-    for(i = 0; i < APPLICATION_N_CUBE_POINTS; i++)
-    {
-        display_drawRectangle(
-            (int)projectedPoints[i].x + (width / 2),
-            (int)projectedPoints[i].y + (height / 2),
-            5,
-            5,
-            0xFFFF0000
+        /* Set Up */
+        (void)memcpy(
+            &facePoints[0],
+            &application_cubePoints[application_cubeFaces[i].a],
+            sizeof(application_cubePoints[application_cubeFaces[i].a])
         );
+        (void)memcpy(
+            &facePoints[1],
+            &application_cubePoints[application_cubeFaces[i].b],
+            sizeof(application_cubePoints[application_cubeFaces[i].b])
+        );
+        (void)memcpy(
+            &facePoints[2],
+            &application_cubePoints[application_cubeFaces[i].c],
+            sizeof(application_cubePoints[application_cubeFaces[i].c])
+        );
+
+        /* Transform Points */
+        for(j = 0; j < 3; j++)
+        {
+            /* Transform Point */
+            transformedPoint = vector_3dRotateX(&facePoints[j], application_cubeRotation.x);
+            transformedPoint = vector_3dRotateY(&transformedPoint, application_cubeRotation.y);
+            transformedPoint = vector_3dRotateZ(&transformedPoint, application_cubeRotation.z);
+
+            /* Translate Point From Camera */
+            transformedPoint.x += application_cameraPosition.x;
+            transformedPoint.y += application_cameraPosition.y;
+            transformedPoint.z += application_cameraPosition.z;
+
+            /* Project Point */
+            triangle.points[j] = vector_3dProject2d(&transformedPoint, APPLICATION_FOV_FACTOR);
+
+            /* Translate Projected Point */
+            triangle.points[j].x += (width / 2);
+            triangle.points[j].y += (height / 2);
+        }
+
+        /* Draw Triangle */
+        display_drawTriangle(&triangle, 0xFFFFFFFF);
     }
 }

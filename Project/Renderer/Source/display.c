@@ -3,6 +3,7 @@
  ****************************************************************************************************/
 
 #include "display.h"
+#include <math.h>
 #include <SDL.h>
 #include <stdio.h>
 
@@ -33,15 +34,36 @@ void display_deinit(void)
     SDL_Quit();
 }
 
-/*** Draw Rectangle ***/
-void display_drawRectangle(const int X, const int Y, const int Width, const int Height, const uint32_t Color)
+/*** Draw Line ***/
+void display_drawLine(const int X0, const int Y0, const int X1, const int Y1, const uint32_t Color)
 {
-    int x, y;
+    int deltaX, deltaY, i, longestSideLength;
+    double incrementX, incrementY;
 
-    /*** Draw Rectangle ***/
-    for(x = X; x < (X + Width); x++)
-        for(y = Y; y < (Y + Height); y++)
-            display_setPixel(x, y, Color);
+    /*** Draw Line (Digital Differential Analyzer Algorithm) ***/
+    /* Delta */
+    deltaX = (X1 - X0);
+    deltaY = (Y1 - Y0);
+
+    /* Longest Side Length */
+    longestSideLength = (abs(deltaX) >= abs(deltaY)) ? abs(deltaX) : abs(deltaY);
+
+    /* Increment */
+    incrementX = (double)deltaX / longestSideLength;
+    incrementY = (double)deltaY / longestSideLength;
+
+    /* Draw Line */
+    for(i = 0; i < longestSideLength; i++)
+        display_setPixel((int)round(X0 + (i * incrementX)), (int)round(Y0 + (i * incrementY)), Color);
+}
+
+/*** Draw Triangle ***/
+void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_t Color)
+{
+    /*** Draw Triangle ***/
+    display_drawLine(Triangle->points[0].x, Triangle->points[0].y, Triangle->points[1].x, Triangle->points[1].y, Color);
+    display_drawLine(Triangle->points[1].x, Triangle->points[1].y, Triangle->points[2].x, Triangle->points[2].y, Color);
+    display_drawLine(Triangle->points[2].x, Triangle->points[2].y, Triangle->points[0].x, Triangle->points[0].y, Color);
 }
 
 /*** Fill Color Buffer ***/
