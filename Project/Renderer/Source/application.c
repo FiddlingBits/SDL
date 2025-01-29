@@ -11,6 +11,7 @@
 
 #include "display.h"
 #include "mesh.h"
+#include "obj.h"
 #include <SDL.h>
 #include <stdbool.h>
 #include <string.h>
@@ -23,9 +24,8 @@
 
 static bool application_isRunning;
 static vector_3d application_cameraPosition;
-static vector_3d application_cubeRotation;
-static triangle_face application_cubeFaces[MESH_N_CUBE_FACES];
-static vector_3d application_cubePoints[MESH_N_CUBE_POINTS];
+static obj_object application_object;
+static vector_3d application_objectRotation;
 
 /****************************************************************************************************
  * Function Prototype
@@ -98,13 +98,9 @@ static void application_setUp(void)
     application_cameraPosition.y = 0.0;
     application_cameraPosition.z = -5.0;
 
-    /* Cube Faces And Points */
-    mesh_getCube(application_cubeFaces, application_cubePoints);
-    
-    /* Cube Rotation */
-    application_cubeRotation.x = 0.0;
-    application_cubeRotation.y = 0.0;
-    application_cubeRotation.z = 0.0;
+    /* OBJ File */
+    if(application_isRunning)
+        application_isRunning = obj_parse("./Asset/cube.obj", &application_object);
 }
 
 /*** Update ***/
@@ -119,38 +115,38 @@ static void application_update(void)
     display_fillColorBuffer(0xFF000000);
     display_getDimensions(&width, &height);
 
-    /* Cube Rotation */
-    application_cubeRotation.x += 0.01;
-    application_cubeRotation.y += 0.01;
-    application_cubeRotation.z += 0.01;
+    /* Object Rotation */
+    application_objectRotation.x += 0.01;
+    application_objectRotation.y += 0.01;
+    application_objectRotation.z += 0.01;
 
-    /* Transform Cube Face Points */
-    for(i = 0; i < MESH_N_CUBE_FACES; i++)
+    /* Transform Object Face Points */
+    for(i = 0; i < application_object.nFace; i++)
     {
         /* Set Up */
         (void)memcpy(
             &facePoints[0],
-            &application_cubePoints[application_cubeFaces[i].a],
-            sizeof(application_cubePoints[application_cubeFaces[i].a])
+            &application_object.vertex[application_object.face[i].a],
+            sizeof(application_object.vertex[application_object.face[i].a])
         );
         (void)memcpy(
             &facePoints[1],
-            &application_cubePoints[application_cubeFaces[i].b],
-            sizeof(application_cubePoints[application_cubeFaces[i].b])
+            &application_object.vertex[application_object.face[i].b],
+            sizeof(application_object.vertex[application_object.face[i].b])
         );
         (void)memcpy(
             &facePoints[2],
-            &application_cubePoints[application_cubeFaces[i].c],
-            sizeof(application_cubePoints[application_cubeFaces[i].c])
+            &application_object.vertex[application_object.face[i].c],
+            sizeof(application_object.vertex[application_object.face[i].c])
         );
 
         /* Transform Points */
         for(j = 0; j < 3; j++)
         {
             /* Transform Point */
-            transformedPoint = vector_3dRotateX(&facePoints[j], application_cubeRotation.x);
-            transformedPoint = vector_3dRotateY(&transformedPoint, application_cubeRotation.y);
-            transformedPoint = vector_3dRotateZ(&transformedPoint, application_cubeRotation.z);
+            transformedPoint = vector_3dRotateX(&facePoints[j], application_objectRotation.x);
+            transformedPoint = vector_3dRotateY(&transformedPoint, application_objectRotation.y);
+            transformedPoint = vector_3dRotateZ(&transformedPoint, application_objectRotation.z);
 
             /* Translate Point From Camera */
             transformedPoint.x += application_cameraPosition.x;
