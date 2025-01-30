@@ -61,9 +61,24 @@ void display_drawLine(const int X0, const int Y0, const int X1, const int Y1, co
 void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_t Color)
 {
     /*** Draw Triangle ***/
-    display_drawLine(Triangle->points[0].x, Triangle->points[0].y, Triangle->points[1].x, Triangle->points[1].y, Color);
-    display_drawLine(Triangle->points[1].x, Triangle->points[1].y, Triangle->points[2].x, Triangle->points[2].y, Color);
-    display_drawLine(Triangle->points[2].x, Triangle->points[2].y, Triangle->points[0].x, Triangle->points[0].y, Color);
+    display_drawLine(
+        (int)Triangle->points[0].x,
+        (int)Triangle->points[0].y,
+        (int)Triangle->points[1].x,
+        (int)Triangle->points[1].y,
+        Color);
+    display_drawLine(
+        (int)Triangle->points[1].x,
+        (int)Triangle->points[1].y,
+        (int)Triangle->points[2].x,
+        (int)Triangle->points[2].y,
+        Color);
+    display_drawLine(
+        (int)Triangle->points[2].x,
+        (int)Triangle->points[2].y,
+        (int)Triangle->points[0].x,
+        (int)Triangle->points[0].y,
+        Color);
 }
 
 /*** Fill Color Buffer ***/

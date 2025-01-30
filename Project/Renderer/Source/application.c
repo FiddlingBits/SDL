@@ -22,6 +22,7 @@
  * Variable
  ****************************************************************************************************/
 
+static bool application_backFaceDisplay = false;
 static bool application_isRunning;
 static vector_3d application_cameraPosition;
 static obj_object application_object;
@@ -82,6 +83,8 @@ static void application_processInput(void)
         case SDL_KEYDOWN:
             if(event.key.keysym.sym == SDLK_ESCAPE)
                 application_isRunning = false;
+            else if(event.key.keysym.sym == SDLK_b)
+                application_backFaceDisplay = !application_backFaceDisplay;
             break;
         case SDL_QUIT:
             application_isRunning = false;
@@ -96,7 +99,7 @@ static void application_setUp(void)
     /* Camera (Left-Handed Coordinate System) */
     application_cameraPosition.x = 0.0;
     application_cameraPosition.y = 0.0;
-    application_cameraPosition.z = -5.0;
+    application_cameraPosition.z = 0.0;
 
     /* OBJ File */
     if(application_isRunning)
@@ -107,7 +110,7 @@ static void application_setUp(void)
 static void application_update(void)
 {
     int height, i, j, width;
-    vector_3d facePoints[3], transformedPoint;
+    vector_3d cameraRay, crossVector[2], facePoints[3], normal, transformedPoints[3];
     triangle_triangle triangle;
 
     /*** Update ***/
@@ -144,17 +147,31 @@ static void application_update(void)
         for(j = 0; j < 3; j++)
         {
             /* Transform Point */
-            transformedPoint = vector_3dRotateX(&facePoints[j], application_objectRotation.x);
-            transformedPoint = vector_3dRotateY(&transformedPoint, application_objectRotation.y);
-            transformedPoint = vector_3dRotateZ(&transformedPoint, application_objectRotation.z);
+            transformedPoints[j] = vector_3dRotateX(&facePoints[j], application_objectRotation.x);
+            transformedPoints[j] = vector_3dRotateY(&transformedPoints[j], application_objectRotation.y);
+            transformedPoints[j] = vector_3dRotateZ(&transformedPoints[j], application_objectRotation.z);
 
             /* Translate Point From Camera */
-            transformedPoint.x += application_cameraPosition.x;
-            transformedPoint.y += application_cameraPosition.y;
-            transformedPoint.z += application_cameraPosition.z;
+            transformedPoints[j].z += 5.0;
+        }
 
+        /* Cull Back-Face */
+        if(!application_backFaceDisplay)
+        {
+            crossVector[0] = vector_3dSubtract(&transformedPoints[1], &transformedPoints[0]);
+            crossVector[1] = vector_3dSubtract(&transformedPoints[2], &transformedPoints[0]);
+            normal = vector_3dCrossProduct(&crossVector[0], &crossVector[1]);
+            normal = vector_3dNormalize(&normal);
+            cameraRay = vector_3dSubtract(&application_cameraPosition, &transformedPoints[0]);
+            if(vector_3dDotProduct(&normal, &cameraRay) < 0.0)
+                continue; // Cull
+        }
+
+        /* Project Points */
+        for(j = 0; j < 3; j++)
+        {
             /* Project Point */
-            triangle.points[j] = vector_3dProject2d(&transformedPoint, APPLICATION_FOV_FACTOR);
+            triangle.points[j] = vector_3dProject2d(&transformedPoints[j], APPLICATION_FOV_FACTOR);
 
             /* Translate Projected Point */
             triangle.points[j].x += (width / 2);
