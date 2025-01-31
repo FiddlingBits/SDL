@@ -22,10 +22,12 @@
  * Variable
  ****************************************************************************************************/
 
-static bool application_backFaceDisplay = false;
+static bool application_backFaceDisplay;
+static bool application_fillTriangle;
 static bool application_isRunning;
 static vector_3d application_cameraPosition;
 static obj_object application_object;
+static uint32_t application_objectColors[6];
 static vector_3d application_objectRotation;
 
 /****************************************************************************************************
@@ -34,6 +36,7 @@ static vector_3d application_objectRotation;
 
 static void application_processInput(void);
 static void application_setUp(void);
+static void application_tearDown(void);
 static void application_update(void);
 
 /****************************************************************************************************
@@ -43,9 +46,6 @@ static void application_update(void);
 /*** Main Entry ***/
 int main(int argc, char *argv[])
 {
-    /*** Initialize ***/
-    application_isRunning = display_init(APPLICATION_FPS);
-
     /*** Set Up ***/
     application_setUp();
 
@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
         display_render();
     }
 
-    /*** Deinitialize ***/
-    display_deinit();
+    /*** Tear Down ***/
+    application_tearDown();
 
     return 0;
 }
@@ -85,6 +85,8 @@ static void application_processInput(void)
                 application_isRunning = false;
             else if(event.key.keysym.sym == SDLK_b)
                 application_backFaceDisplay = !application_backFaceDisplay;
+            else if(event.key.keysym.sym == SDLK_f)
+                application_fillTriangle = !application_fillTriangle;
             break;
         case SDL_QUIT:
             application_isRunning = false;
@@ -101,14 +103,42 @@ static void application_setUp(void)
     application_cameraPosition.y = 0.0;
     application_cameraPosition.z = 0.0;
 
+    /* Display */
+    application_isRunning = display_init(APPLICATION_FPS);
+
+    /* Flags */
+    application_backFaceDisplay = false;
+    application_fillTriangle = true;
+
     /* OBJ File */
     if(application_isRunning)
         application_isRunning = obj_parse("./Asset/cube.obj", &application_object);
+
+    /* Object Colors */
+    application_objectColors[0] = 0xFFFF0000; // Red
+    application_objectColors[1] = 0xFF808000; // Olive
+    application_objectColors[2] = 0xFF00FF00; // Green
+    application_objectColors[3] = 0xFF008080; // Teal
+    application_objectColors[4] = 0xFF0000FF; // Blue
+    application_objectColors[5] = 0xFF800080; // Purple
+
+    /* Object Rotation */
+    application_objectRotation.x = 0.0;
+    application_objectRotation.y = 0.0;
+    application_objectRotation.z = 0.0;
+}
+
+/*** Tear Down ***/
+static void application_tearDown(void)
+{
+    /*** Tear Down ***/
+    display_deinit();
 }
 
 /*** Update ***/
 static void application_update(void)
 {
+    uint32_t color;
     int height, i, j, width;
     vector_3d cameraRay, crossVector[2], facePoints[3], normal, transformedPoints[3];
     triangle_triangle triangle;
@@ -179,6 +209,15 @@ static void application_update(void)
         }
 
         /* Draw Triangle */
-        display_drawTriangle(&triangle, 0xFFFFFFFF);
+        if(application_fillTriangle)
+        {
+            color = application_objectColors[(i / 2) % (sizeof(application_objectColors) / sizeof(application_objectColors[0]))];
+            display_drawTriangle(&triangle, color, application_fillTriangle);
+        }
+        else
+        {
+            color = 0xFFFFFFFF; // White
+            display_drawTriangle(&triangle, color, application_fillTriangle);
+        }
     }
 }

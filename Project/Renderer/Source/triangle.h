@@ -27,3 +27,9 @@ typedef struct
 {
     vector_2d points[3];
 } triangle_triangle;
+
+/****************************************************************************************************
+ * Function Prototype
+ ****************************************************************************************************/
+
+extern triangle_triangle triangle_sortPoints(const triangle_triangle* const Triangle);

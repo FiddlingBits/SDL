@@ -20,6 +20,13 @@ static SDL_Window* display_window = NULL;
 static int display_width = 0, display_height = 0;
 
 /****************************************************************************************************
+ * Function Prototype
+ ****************************************************************************************************/
+
+static void display_fillFlatBottomTriangle(const int X0, const int Y0, const int X1, const int Y1, const int X2, const int Y2, const uint32_t Color);
+static void display_fillFlatTopTriangle(const int X0, const int Y0, const int X1, const int Y1, const int X2, const int Y2, const uint32_t Color);
+
+/****************************************************************************************************
  * Function Definition (Public)
  ****************************************************************************************************/
 
@@ -53,14 +60,18 @@ void display_drawLine(const int X0, const int Y0, const int X1, const int Y1, co
     incrementY = (double)deltaY / longestSideLength;
 
     /* Draw Line */
-    for(i = 0; i < longestSideLength; i++)
+    for(i = 0; i <= longestSideLength; i++)
         display_setPixel((int)round(X0 + (i * incrementX)), (int)round(Y0 + (i * incrementY)), Color);
 }
 
 /*** Draw Triangle ***/
-void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_t Color)
+void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_t Color, const bool Fill)
 {
+    vector_2d flatPoints[2];
+    triangle_triangle triangle;
+
     /*** Draw Triangle ***/
+    /* Line */
     display_drawLine(
         (int)Triangle->points[0].x,
         (int)Triangle->points[0].y,
@@ -79,6 +90,71 @@ void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_
         (int)Triangle->points[0].x,
         (int)Triangle->points[0].y,
         Color);
+
+    /* Fill */
+    if(Fill)
+    {
+        /* Sort Points (By Y Coordinate, Ascending) */
+        triangle = triangle_sortPoints(Triangle);
+
+        /* Fill Triangle */
+        if((int)triangle.points[0].y == (int)triangle.points[1].y)
+        {
+            /* Triangle Is Already A Flat-Top Triangle */
+            display_fillFlatTopTriangle(
+                (int)triangle.points[0].x,
+                (int)triangle.points[0].y,
+                (int)triangle.points[1].x,
+                (int)triangle.points[1].y,
+                (int)triangle.points[2].x,
+                (int)triangle.points[2].y,
+                Color
+            );
+        }
+        else if((int)triangle.points[1].y == (int)triangle.points[2].y)
+        {
+            /* Triangle Is Already A Flat-Bottom Triangle */
+            display_fillFlatBottomTriangle(
+                (int)triangle.points[0].x,
+                (int)triangle.points[0].y,
+                (int)triangle.points[1].x,
+                (int)triangle.points[1].y,
+                (int)triangle.points[2].x,
+                (int)triangle.points[2].y,
+                Color
+            );
+        }
+        else
+        {
+            /* Triangle Has Both Flat-Bottom And Top Sub-Triangles; Find Flat-Bottom/Top Points */
+            flatPoints[0] = triangle.points[1]; // Not Needed, But Set Anyway For Clarity
+            flatPoints[1].x = triangle.points[2].x - triangle.points[0].x;
+            flatPoints[1].x *= triangle.points[1].y - triangle.points[0].y;
+            flatPoints[1].x /= triangle.points[2].y - triangle.points[0].y;
+            flatPoints[1].x += triangle.points[0].x;
+            flatPoints[1].y = triangle.points[1].y;
+
+            /* Fill Flat-Bottom Sub-Triangle */
+            display_fillFlatBottomTriangle(
+                (int)triangle.points[0].x,
+                (int)triangle.points[0].y,
+                (int)triangle.points[1].x,
+                (int)triangle.points[1].y,
+                (int)flatPoints[1].x,
+                (int)flatPoints[1].y,
+                Color);
+
+            /* Fill Flat-Top Sub-Triangle */
+            display_fillFlatTopTriangle(
+                (int)triangle.points[1].x,
+                (int)triangle.points[1].y,
+                (int)flatPoints[1].x,
+                (int)flatPoints[1].y,
+                (int)triangle.points[2].x,
+                (int)triangle.points[2].y,
+                Color);
+        }
+    }
 }
 
 /*** Fill Color Buffer ***/
@@ -188,4 +264,78 @@ void display_setPixel(const int X, const int Y, const uint32_t Color)
 {
     if((X >= 0) && (X < display_width) && (Y >= 0) && (Y < display_height))
         display_colorBuffer[(Y * display_width) + X] = Color;
+}
+
+/****************************************************************************************************
+ * Function Definition (Private)
+ ****************************************************************************************************/
+
+/*** Fill Flat-Bottom Triangle ***/
+static void display_fillFlatBottomTriangle(const int X0, const int Y0, const int X1, const int Y1, const int X2, const int Y2, const uint32_t Color)
+{
+    double m0, m1, xStart, xEnd;
+    int y;
+
+    /*** Fill Flat-Bottom Triangle ***/
+    /*                               */
+    /*            (X0,Y0)            */
+    /*              / \              */
+    /*             /   \             */
+    /*            /     \            */
+    /*           /       \           */
+    /*          /         \          */
+    /*      (X1,Y1)------(X2,Y2)     */
+    /*                               */
+    /*********************************/ 
+    
+    /* Slopes */
+    m0 = (double)(X1 - X0) / (Y1 - Y0);
+    m1 = (double)(X2 - X0) / (Y2 - Y0);
+
+    /* X Start/End */
+    xStart = X0;
+    xEnd = X0;
+
+    /* Fill Triangle From Top To Bottom */
+    for(y = Y0; y <= Y2; y++)
+    {
+        display_drawLine((int)xStart, y, (int)xEnd, y, Color);
+        xStart += m0;
+        xEnd += m1;
+    }
+}
+
+/*** Fill Flat-Top Triangle ***/
+static void display_fillFlatTopTriangle(const int X0, const int Y0, const int X1, const int Y1, const int X2, const int Y2, const uint32_t Color)
+{
+    double m0, m1, xStart, xEnd;
+    int y;
+
+    /*** Fill Flat-Top Triangle ***/
+    /*                            */
+    /*     (X0,Y0)------(X1,Y1)   */
+    /*         \         /        */
+    /*          \       /         */
+    /*           \     /          */
+    /*            \   /           */
+    /*             \ /            */
+    /*           (X2,Y2)          */
+    /*                            */
+    /******************************/
+
+    /* Slopes */
+    m0 = (double)(X2 - X0) / (Y2 - Y0);
+    m1 = (double)(X2 - X1) / (Y2 - Y1);
+
+    /* X Start/End */
+    xStart = X2;
+    xEnd = X2;
+
+    /* Fill Triangle From Bottom To Top */
+    for(y = Y2; y >= Y0; y--)
+    {
+        display_drawLine((int)xStart, y, (int)xEnd, y, Color);
+        xStart -= m0;
+        xEnd -= m1;
+    }
 }
