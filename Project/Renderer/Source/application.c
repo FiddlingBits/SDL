@@ -15,6 +15,7 @@
 #include <SDL.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 #include "triangle.h"
 #include "vector.h"
 
@@ -27,7 +28,6 @@ static bool application_fillTriangle;
 static bool application_isRunning;
 static vector_3d application_cameraPosition;
 static obj_object application_object;
-static uint32_t application_objectColors[6];
 static vector_3d application_objectRotation;
 
 /****************************************************************************************************
@@ -114,14 +114,6 @@ static void application_setUp(void)
     if(application_isRunning)
         application_isRunning = obj_parse("./Asset/cube.obj", &application_object);
 
-    /* Object Colors */
-    application_objectColors[0] = 0xFFFF0000; // Red
-    application_objectColors[1] = 0xFF808000; // Olive
-    application_objectColors[2] = 0xFF00FF00; // Green
-    application_objectColors[3] = 0xFF008080; // Teal
-    application_objectColors[4] = 0xFF0000FF; // Blue
-    application_objectColors[5] = 0xFF800080; // Purple
-
     /* Object Rotation */
     application_objectRotation.x = 0.0;
     application_objectRotation.y = 0.0;
@@ -133,20 +125,22 @@ static void application_tearDown(void)
 {
     /*** Tear Down ***/
     display_deinit();
+    obj_destroy(&application_object);
 }
 
 /*** Update ***/
 static void application_update(void)
 {
-    uint32_t color;
-    int height, i, j, width;
+    int height, i, j, width, triangleCount;
     vector_3d cameraRay, crossVector[2], facePoints[3], normal, transformedPoints[3];
-    triangle_triangle triangle;
+    triangle_triangle triangle, *triangles;
 
     /*** Update ***/
     /* Set Up */
     display_fillColorBuffer(0xFF000000);
     display_getDimensions(&width, &height);
+    triangles = malloc(application_object.nFace * sizeof(*triangles));
+    triangleCount = 0;
 
     /* Object Rotation */
     application_objectRotation.x += 0.01;
@@ -183,7 +177,7 @@ static void application_update(void)
 
             /* Translate Point From Camera */
             transformedPoints[j].z += 5.0;
-        }
+        } 
 
         /* Cull Back-Face */
         if(!application_backFaceDisplay)
@@ -198,8 +192,12 @@ static void application_update(void)
         }
 
         /* Project Points */
+        triangle.averageDepth = 0.0;
         for(j = 0; j < 3; j++)
         {
+            /* Average Depth */
+            triangle.averageDepth += transformedPoints[j].z; // Sum
+
             /* Project Point */
             triangle.points[j] = vector_3dProject2d(&transformedPoints[j], APPLICATION_FOV_FACTOR);
 
@@ -207,17 +205,24 @@ static void application_update(void)
             triangle.points[j].x += (width / 2);
             triangle.points[j].y += (height / 2);
         }
-
-        /* Draw Triangle */
         if(application_fillTriangle)
-        {
-            color = application_objectColors[(i / 2) % (sizeof(application_objectColors) / sizeof(application_objectColors[0]))];
-            display_drawTriangle(&triangle, color, application_fillTriangle);
-        }
+            triangle.color = application_object.faceColor[i];
         else
-        {
-            color = 0xFFFFFFFF; // White
-            display_drawTriangle(&triangle, color, application_fillTriangle);
-        }
+            triangle.color = 0xFFFFFFFF; // White
+        triangle.averageDepth /= 3; // Average
+        triangles[triangleCount++] = triangle;
     }
+
+    /* Draw (Sorted) Triangles */
+    triangle_sortTriangles(triangles, triangleCount);
+    for(i = 0; i < triangleCount; i++)
+    {
+        if(application_fillTriangle)
+            display_drawTriangle(&triangles[i], application_fillTriangle);
+        else
+            display_drawTriangle(&triangles[i], application_fillTriangle);
+    }
+
+    /* Clean Up */
+    free(triangles);
 }

@@ -65,7 +65,7 @@ void display_drawLine(const int X0, const int Y0, const int X1, const int Y1, co
 }
 
 /*** Draw Triangle ***/
-void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_t Color, const bool Fill)
+void display_drawTriangle(const triangle_triangle* const Triangle, const bool Fill)
 {
     vector_2d flatPoints[2];
     triangle_triangle triangle;
@@ -77,19 +77,19 @@ void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_
         (int)Triangle->points[0].y,
         (int)Triangle->points[1].x,
         (int)Triangle->points[1].y,
-        Color);
+        Triangle->color);
     display_drawLine(
         (int)Triangle->points[1].x,
         (int)Triangle->points[1].y,
         (int)Triangle->points[2].x,
         (int)Triangle->points[2].y,
-        Color);
+        Triangle->color);
     display_drawLine(
         (int)Triangle->points[2].x,
         (int)Triangle->points[2].y,
         (int)Triangle->points[0].x,
         (int)Triangle->points[0].y,
-        Color);
+        Triangle->color);
 
     /* Fill */
     if(Fill)
@@ -108,7 +108,7 @@ void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_
                 (int)triangle.points[1].y,
                 (int)triangle.points[2].x,
                 (int)triangle.points[2].y,
-                Color
+                Triangle->color
             );
         }
         else if((int)triangle.points[1].y == (int)triangle.points[2].y)
@@ -121,7 +121,7 @@ void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_
                 (int)triangle.points[1].y,
                 (int)triangle.points[2].x,
                 (int)triangle.points[2].y,
-                Color
+                Triangle->color
             );
         }
         else
@@ -142,7 +142,7 @@ void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_
                 (int)triangle.points[1].y,
                 (int)flatPoints[1].x,
                 (int)flatPoints[1].y,
-                Color);
+                Triangle->color);
 
             /* Fill Flat-Top Sub-Triangle */
             display_fillFlatTopTriangle(
@@ -152,7 +152,7 @@ void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_
                 (int)flatPoints[1].y,
                 (int)triangle.points[2].x,
                 (int)triangle.points[2].y,
-                Color);
+                Triangle->color);
         }
     }
 }

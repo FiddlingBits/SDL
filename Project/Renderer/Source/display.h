@@ -18,7 +18,7 @@
 
 extern void display_deinit(void);
 extern void display_drawLine(const int X0, const int Y0, const int X1, const int Y1, const uint32_t Color);
-extern void display_drawTriangle(const triangle_triangle* const Triangle, const uint32_t Color, const bool Fill);
+extern void display_drawTriangle(const triangle_triangle* const Triangle, const bool Fill);
 extern void display_fillColorBuffer(const uint32_t Color);
 extern void display_getDimensions(int* const width, int* const height);
 extern bool display_init(const int FPS);

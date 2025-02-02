@@ -9,6 +9,7 @@
  ****************************************************************************************************/
 
 #include <stdbool.h>
+#include <stdint.h>
 #include "triangle.h"
 #include "vector.h"
 
@@ -21,6 +22,7 @@ typedef struct
 {
     int nFace;
     triangle_face* face;
+    uint32_t *faceColor;
     int nVertex;
     vector_3d* vertex;
 } obj_object;
@@ -29,4 +31,5 @@ typedef struct
  * Function Prototype
  ****************************************************************************************************/
 
+extern void obj_destroy(obj_object* const object);
 extern bool obj_parse(const char* const Path, obj_object* const object);

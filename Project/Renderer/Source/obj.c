@@ -4,13 +4,37 @@
 
 #include <errno.h>
 #include "obj.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /****************************************************************************************************
+ * Constant
+ ****************************************************************************************************/
+
+/* Face Colors */
+const uint32_t object_FaceColors[] = {
+    0xFFFF0000, // Red
+    0xFF808000, // Olive
+    0xFF00FF00, // Green
+    0xFF008080, // Teal
+    0xFF0000FF, // Blue
+    0xFF800080 // Purple
+};
+const size_t object_FaceColorsCount = sizeof(object_FaceColors) / sizeof(object_FaceColors[0]);
+
+/****************************************************************************************************
  * Function Definition (Public)
  ****************************************************************************************************/
+
+/*** Destroy ***/
+void obj_destroy(obj_object* const object)
+{
+    free(object->face);
+    free(object->faceColor);
+    free(object->vertex);
+}
 
 /*** Parse ***/
 bool obj_parse(const char* const Path, obj_object* const object)
@@ -33,6 +57,7 @@ bool obj_parse(const char* const Path, obj_object* const object)
     iFace = 0;
     object->nFace = 0;
     object->face = NULL;
+    object->faceColor = NULL;
     iVertex = 0;
     object->nVertex = 0;
     object->vertex = NULL;
@@ -56,6 +81,7 @@ bool obj_parse(const char* const Path, obj_object* const object)
 
     /* Memory */
     object->face = malloc(object->nFace * sizeof(*(object->face)));
+    object->faceColor = malloc(object->nFace * sizeof(*(object->faceColor)));
     object->vertex = malloc(object->nVertex * sizeof(*(object->vertex)));
 
     /* Data */
@@ -71,6 +97,7 @@ bool obj_parse(const char* const Path, obj_object* const object)
                 object->face[iFace].a = a - 1; // Indices Start At 1 In Object File
                 object->face[iFace].b = b - 1;
                 object->face[iFace].c = c - 1;
+                object->faceColor[iFace] = object_FaceColors[iFace % object_FaceColorsCount];
                 iFace++;
             }
             else
