@@ -10,6 +10,8 @@
  ****************************************************************************************************/
 
 #include "display.h"
+#include <math.h>
+#include "matrix.h"
 #include "mesh.h"
 #include "obj.h"
 #include <SDL.h>
@@ -29,6 +31,8 @@ static bool application_isRunning;
 static vector_3d application_cameraPosition;
 static obj_object application_object;
 static vector_3d application_objectRotation;
+static vector_3d application_objectScale;
+static vector_3d application_objectTranslate;
 
 /****************************************************************************************************
  * Function Prototype
@@ -118,6 +122,16 @@ static void application_setUp(void)
     application_objectRotation.x = 0.0;
     application_objectRotation.y = 0.0;
     application_objectRotation.z = 0.0;
+
+    /* Object Scale */
+    application_objectScale.x = 1.0;
+    application_objectScale.y = 1.0;
+    application_objectScale.z = 1.0;
+
+    /* Object Translate */
+    application_objectTranslate.x = -1.0;
+    application_objectTranslate.y = -1.0;
+    application_objectTranslate.z = 5.0;
 }
 
 /*** Tear Down ***/
@@ -133,19 +147,46 @@ static void application_update(void)
 {
     int height, i, j, width, triangleCount;
     vector_3d cameraRay, crossVector[2], facePoints[3], normal, transformedPoints[3];
+    matrix_4x4 rotateXMatrix, rotateYMatrix, rotateZMatrix, scaleMatrix, translateMatrix, worldMatrix;
     triangle_triangle triangle, *triangles;
 
     /*** Update ***/
     /* Set Up */
     display_fillColorBuffer(0xFF000000);
     display_getDimensions(&width, &height);
-    triangles = malloc(application_object.nFace * sizeof(*triangles));
+    if((triangles = malloc(application_object.nFace * sizeof(*triangles))) == NULL)
+        return;
     triangleCount = 0;
 
     /* Object Rotation */
     application_objectRotation.x += 0.01;
-    application_objectRotation.y += 0.01;
-    application_objectRotation.z += 0.01;
+    application_objectRotation.y += 0.02;
+    application_objectRotation.z += 0.03;
+
+    /* Object Scale */
+    application_objectScale.x += 0.02;
+    application_objectScale.y += 0.03;
+    application_objectScale.z += 0.04;
+
+    /* Object Translate */
+    application_objectTranslate.x += 0.05;
+    application_objectTranslate.y += 0.05;
+    application_objectTranslate.z += 0.25;
+
+    /* Matrix (Individual) */
+    rotateXMatrix = matrix_4x4RotateX(application_objectRotation.x);
+    rotateYMatrix = matrix_4x4RotateY(application_objectRotation.y);
+    rotateZMatrix = matrix_4x4RotateZ(application_objectRotation.z);
+    scaleMatrix = matrix_4x4Scale(application_objectScale.x, application_objectScale.y, application_objectScale.z);
+    translateMatrix = matrix_4x4Translate(application_objectTranslate.x, application_objectTranslate.y, application_objectTranslate.z);
+
+    /* Matrix (World; Order Matters: Usually Scale, Rotate, Then Translate) */
+    matrix_4x4Identity(&worldMatrix);
+    worldMatrix = matrix_4x4MultiplyMatrix(&scaleMatrix, &worldMatrix);
+    worldMatrix = matrix_4x4MultiplyMatrix(&rotateXMatrix, &worldMatrix);
+    worldMatrix = matrix_4x4MultiplyMatrix(&rotateYMatrix, &worldMatrix);
+    worldMatrix = matrix_4x4MultiplyMatrix(&rotateZMatrix, &worldMatrix);
+    worldMatrix = matrix_4x4MultiplyMatrix(&translateMatrix, &worldMatrix);
 
     /* Transform Object Face Points */
     for(i = 0; i < application_object.nFace; i++)
@@ -169,15 +210,7 @@ static void application_update(void)
 
         /* Transform Points */
         for(j = 0; j < 3; j++)
-        {
-            /* Transform Point */
-            transformedPoints[j] = vector_3dRotateX(&facePoints[j], application_objectRotation.x);
-            transformedPoints[j] = vector_3dRotateY(&transformedPoints[j], application_objectRotation.y);
-            transformedPoints[j] = vector_3dRotateZ(&transformedPoints[j], application_objectRotation.z);
-
-            /* Translate Point From Camera */
-            transformedPoints[j].z += 5.0;
-        } 
+            transformedPoints[j] = matrix_4x4MultiplyVector(&worldMatrix, &facePoints[j]);
 
         /* Cull Back-Face */
         if(!application_backFaceDisplay)

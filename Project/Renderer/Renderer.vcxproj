@@ -98,6 +98,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\matrix.c" />
     <ClCompile Include="Source\mesh.c" />
     <ClCompile Include="Source\application.c" />
     <ClCompile Include="Source\display.c" />
@@ -106,6 +107,7 @@
     <ClCompile Include="Source\triangle.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\matrix.h" />
     <ClInclude Include="Source\obj.h" />
     <ClInclude Include="Source\mesh.h" />
     <ClInclude Include="Source\display.h" />
