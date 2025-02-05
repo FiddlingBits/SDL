@@ -2,8 +2,8 @@
  * Define
  ****************************************************************************************************/
 
-#define APPLICATION_FOV_FACTOR (1000)
-#define APPLICATION_FPS        (30)
+#define APPLICATION_FOV (60 * (M_PI / 180.0)) // Convert Degrees To Radians
+#define APPLICATION_FPS (30)
 
 /****************************************************************************************************
  * Include
@@ -27,12 +27,16 @@
 
 static bool application_backFaceDisplay;
 static bool application_fillTriangle;
+static double application_fov;
+static double application_fovZoomIncrement;
 static bool application_isRunning;
+static bool application_zoom;
 static vector_3d application_cameraPosition;
 static obj_object application_object;
 static vector_3d application_objectRotation;
-static vector_3d application_objectScale;
 static vector_3d application_objectTranslate;
+static double application_objectTranslateAngle;
+static double application_objectTranslateRadius;
 
 /****************************************************************************************************
  * Function Prototype
@@ -91,6 +95,8 @@ static void application_processInput(void)
                 application_backFaceDisplay = !application_backFaceDisplay;
             else if(event.key.keysym.sym == SDLK_f)
                 application_fillTriangle = !application_fillTriangle;
+            else if(event.key.keysym.sym == SDLK_z)
+                application_zoom = !application_zoom;
             break;
         case SDL_QUIT:
             application_isRunning = false;
@@ -113,6 +119,11 @@ static void application_setUp(void)
     /* Flags */
     application_backFaceDisplay = false;
     application_fillTriangle = true;
+    application_zoom = false;
+
+    /* FOV */
+    application_fov = APPLICATION_FOV;
+    application_fovZoomIncrement = 0.1;
 
     /* OBJ File */
     if(application_isRunning)
@@ -123,15 +134,12 @@ static void application_setUp(void)
     application_objectRotation.y = 0.0;
     application_objectRotation.z = 0.0;
 
-    /* Object Scale */
-    application_objectScale.x = 1.0;
-    application_objectScale.y = 1.0;
-    application_objectScale.z = 1.0;
-
     /* Object Translate */
-    application_objectTranslate.x = -1.0;
-    application_objectTranslate.y = -1.0;
-    application_objectTranslate.z = 5.0;
+    application_objectTranslateAngle = 0.0;
+    application_objectTranslateRadius = 5.0;
+    application_objectTranslate.x = application_objectTranslateRadius * cos(application_objectTranslateAngle);
+    application_objectTranslate.y = application_objectTranslateRadius * sin(application_objectTranslateAngle);
+    application_objectTranslate.z = 10.0;
 }
 
 /*** Tear Down ***/
@@ -145,9 +153,9 @@ static void application_tearDown(void)
 /*** Update ***/
 static void application_update(void)
 {
-    int height, i, j, width, triangleCount;
     vector_3d cameraRay, crossVector[2], facePoints[3], normal, transformedPoints[3];
-    matrix_4x4 rotateXMatrix, rotateYMatrix, rotateZMatrix, scaleMatrix, translateMatrix, worldMatrix;
+    int height, i, j, width, triangleCount;
+    matrix_4x4 perspectiveMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, scaleMatrix, translateMatrix, worldMatrix;
     triangle_triangle triangle, *triangles;
 
     /*** Update ***/
@@ -163,21 +171,17 @@ static void application_update(void)
     application_objectRotation.y += 0.02;
     application_objectRotation.z += 0.03;
 
-    /* Object Scale */
-    application_objectScale.x += 0.02;
-    application_objectScale.y += 0.03;
-    application_objectScale.z += 0.04;
-
     /* Object Translate */
-    application_objectTranslate.x += 0.05;
-    application_objectTranslate.y += 0.05;
-    application_objectTranslate.z += 0.25;
+    application_objectTranslateAngle += 0.01;
+    application_objectTranslate.x = application_objectTranslateRadius * cos(application_objectTranslateAngle);
+    application_objectTranslate.y = application_objectTranslateRadius * sin(application_objectTranslateAngle);
+    application_objectTranslate.z += 0.01;
 
     /* Matrix (Individual) */
     rotateXMatrix = matrix_4x4RotateX(application_objectRotation.x);
     rotateYMatrix = matrix_4x4RotateY(application_objectRotation.y);
     rotateZMatrix = matrix_4x4RotateZ(application_objectRotation.z);
-    scaleMatrix = matrix_4x4Scale(application_objectScale.x, application_objectScale.y, application_objectScale.z);
+    scaleMatrix = matrix_4x4Scale(1.0, 1.0, 1.0);
     translateMatrix = matrix_4x4Translate(application_objectTranslate.x, application_objectTranslate.y, application_objectTranslate.z);
 
     /* Matrix (World; Order Matters: Usually Scale, Rotate, Then Translate) */
@@ -187,6 +191,13 @@ static void application_update(void)
     worldMatrix = matrix_4x4MultiplyMatrix(&rotateYMatrix, &worldMatrix);
     worldMatrix = matrix_4x4MultiplyMatrix(&rotateZMatrix, &worldMatrix);
     worldMatrix = matrix_4x4MultiplyMatrix(&translateMatrix, &worldMatrix);
+
+    /* Perspective Matrix */
+    if(!application_zoom && (application_fov < APPLICATION_FOV))
+        application_fov += application_fovZoomIncrement;
+    else if(application_zoom && (application_fov > (APPLICATION_FOV / 2.0)))
+        application_fov -= application_fovZoomIncrement;
+    perspectiveMatrix = matrix_4x4Perspective(width, height, application_fov, 0.1, 100.0);
 
     /* Transform Object Face Points */
     for(i = 0; i < application_object.nFace; i++)
@@ -210,7 +221,7 @@ static void application_update(void)
 
         /* Transform Points */
         for(j = 0; j < 3; j++)
-            transformedPoints[j] = matrix_4x4MultiplyVector(&worldMatrix, &facePoints[j]);
+            transformedPoints[j] = matrix_4x4MultiplyVector3D(&worldMatrix, &facePoints[j]);
 
         /* Cull Back-Face */
         if(!application_backFaceDisplay)
@@ -232,11 +243,13 @@ static void application_update(void)
             triangle.averageDepth += transformedPoints[j].z; // Sum
 
             /* Project Point */
-            triangle.points[j] = vector_3dProject2d(&transformedPoints[j], APPLICATION_FOV_FACTOR);
+            triangle.points[j] = matrix_4x4Project(&perspectiveMatrix, &transformedPoints[j]);
 
-            /* Translate Projected Point */
-            triangle.points[j].x += (width / 2);
-            triangle.points[j].y += (height / 2);
+            /* Scale Projected Point For Screen */
+            triangle.points[j].x *= (width / 2.0);
+            triangle.points[j].y *= (height / 2.0);
+            triangle.points[j].x += (width / 2.0);
+            triangle.points[j].y += (height / 2.0);
         }
         if(application_fillTriangle)
             triangle.color = application_object.faceColor[i];

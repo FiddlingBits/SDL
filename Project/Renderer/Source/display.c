@@ -67,7 +67,7 @@ void display_drawLine(const int X0, const int Y0, const int X1, const int Y1, co
 /*** Draw Triangle ***/
 void display_drawTriangle(const triangle_triangle* const Triangle, const bool Fill)
 {
-    vector_2d flatPoints[2];
+    vector_3d flatPoints[3];
     triangle_triangle triangle;
 
     /*** Draw Triangle ***/

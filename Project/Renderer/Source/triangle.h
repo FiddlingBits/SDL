@@ -28,7 +28,7 @@ typedef struct
 {
     double averageDepth;
     uint32_t color;
-    vector_2d points[3];
+    vector_3d points[3];
 } triangle_triangle;
 
 /****************************************************************************************************

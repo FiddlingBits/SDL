@@ -9,82 +9,6 @@
  * Function Definition (Public)
  ****************************************************************************************************/
 
-/*** 2D Add ***/
-vector_2d vector_2dAdd(const vector_2d* const V1, const vector_2d* const V2)
-{
-    vector_2d vector;
-
-    /*** 2D Add ***/
-    vector.x = V1->x + V2->x;
-    vector.y = V1->y + V2->y;
-
-    return vector;
-}
-
-/*** 2D Divide ***/
-vector_2d vector_2dDivide(const vector_2d* const Vector2d, const double Scalar)
-{
-    vector_2d vector;
-
-    /*** 2D Divide ***/
-    vector.x = Vector2d->x / Scalar;
-    vector.y = Vector2d->y / Scalar;
-
-    return vector;
-}
-
-/*** 2D Dot Product ***/
-double vector_2dDotProduct(const vector_2d* const V1, const vector_2d* const V2)
-{
-    /*** 2D Dot Product ***/
-    return (V1->x * V2->x) + (V1->y * V2->y);
-}
-
-/*** 2D Magnitude ***/
-double vector_2dMagnitude(const vector_2d* const Vector2d)
-{
-    /*** 2D Magnitude ***/
-    return sqrt(pow(Vector2d->x, 2.0) + pow(Vector2d->y, 2.0));
-}
-
-/*** 2D Multiply ***/
-vector_2d vector_2dMultiply(const vector_2d* const Vector2d, const double Scalar)
-{
-    vector_2d vector;
-
-    /*** 2D Multiply ***/
-    vector.x = Vector2d->x * Scalar;
-    vector.y = Vector2d->y * Scalar;
-
-    return vector;
-}
-
-/*** 2D Normalize ***/
-vector_2d vector_2dNormalize(const vector_2d* const Vector2d)
-{
-    double magnitude;
-    vector_2d vector;
-
-    /*** 2D Normalize ***/
-    magnitude = vector_2dMagnitude(Vector2d);
-    vector.x = Vector2d->x / magnitude;
-    vector.y = Vector2d->y / magnitude;
-
-    return vector;
-}
-
-/*** 2D Subtract ***/
-vector_2d vector_2dSubtract(const vector_2d* const V1, const vector_2d* const V2)
-{
-    vector_2d vector;
-
-    /*** 2D Subtract ***/
-    vector.x = V1->x - V2->x;
-    vector.y = V1->y - V2->y;
-
-    return vector;
-}
-
 /*** 3D Add ***/
 vector_3d vector_3dAdd(const vector_3d* const V1, const vector_3d* const V2)
 {
@@ -164,18 +88,6 @@ vector_3d vector_3dNormalize(const vector_3d* const Vector3d)
     vector.z = Vector3d->z / magnitude;
 
     return vector;
-}
-
-/*** 3D Project 2D ***/
-vector_2d vector_3dProject2d(const vector_3d* const Vector3d, const double FovFactor)
-{
-    vector_2d vector2d;
-
-    /*** 3D Project 2D ***/
-    vector2d.x = (FovFactor * Vector3d->x) / Vector3d->z;
-    vector2d.y = (FovFactor * Vector3d->y) / Vector3d->z;
-    
-    return vector2d;
 }
 
 /*** 3D Rotate X ***/
