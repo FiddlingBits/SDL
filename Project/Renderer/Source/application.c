@@ -28,13 +28,12 @@
  ****************************************************************************************************/
 
 static bool application_backFaceDisplay;
+static vector_3d application_cameraPosition;
 static bool application_fillTriangle;
 static double application_fov;
 static double application_fovZoomIncrement;
-static light_light application_globalLight;
 static bool application_isRunning;
-static bool application_zoom;
-static vector_3d application_cameraPosition;
+static light_light application_light;
 static obj_object application_object;
 static uint32_t application_objectColor[4];
 static int application_objectColorIndex;
@@ -42,6 +41,8 @@ static vector_3d application_objectRotation;
 static vector_3d application_objectTranslate;
 static double application_objectTranslateAngle;
 static double application_objectTranslateRadius;
+static bool application_shade;
+static bool application_zoom;
 
 /****************************************************************************************************
  * Function Prototype
@@ -102,6 +103,8 @@ static void application_processInput(void)
                 application_objectColorIndex = (application_objectColorIndex + 1) % (sizeof(application_objectColor) / sizeof(application_objectColor[0]));
             else if(event.key.keysym.sym == SDLK_f)
                 application_fillTriangle = !application_fillTriangle;
+            else if(event.key.keysym.sym == SDLK_s)
+                application_shade = !application_shade;
             else if(event.key.keysym.sym == SDLK_z)
                 application_zoom = !application_zoom;
             break;
@@ -126,17 +129,18 @@ static void application_setUp(void)
     /* Flags */
     application_backFaceDisplay = false;
     application_fillTriangle = true;
+    application_shade = true;
     application_zoom = false;
 
     /* FOV */
     application_fov = APPLICATION_FOV;
     application_fovZoomIncrement = 0.1;
 
-    /* Global Light */
-    application_globalLight.direction.x = 0.0;
-    application_globalLight.direction.y = 0.0;
-    application_globalLight.direction.z = 1.0;
-    application_globalLight.direction = vector_3dNormalize(&application_globalLight.direction);
+    /* Light */
+    application_light.direction.x = 0.0;
+    application_light.direction.y = 0.0;
+    application_light.direction.z = 1.0;
+    application_light.direction = vector_3dNormalize(&application_light.direction);
 
     /* OBJ File */
     if(application_isRunning)
@@ -244,13 +248,15 @@ static void application_update(void)
         for(j = 0; j < 3; j++)
             transformedPoints[j] = matrix_4x4MultiplyVector3D(&worldMatrix, &facePoints[j]);
 
+        /* Normal */
+        crossVector[0] = vector_3dSubtract(&transformedPoints[1], &transformedPoints[0]);
+        crossVector[1] = vector_3dSubtract(&transformedPoints[2], &transformedPoints[0]);
+        normal = vector_3dCrossProduct(&crossVector[0], &crossVector[1]);
+        normal = vector_3dNormalize(&normal);
+
         /* Cull Back-Face */
         if(!application_backFaceDisplay)
         {
-            crossVector[0] = vector_3dSubtract(&transformedPoints[1], &transformedPoints[0]);
-            crossVector[1] = vector_3dSubtract(&transformedPoints[2], &transformedPoints[0]);
-            normal = vector_3dCrossProduct(&crossVector[0], &crossVector[1]);
-            normal = vector_3dNormalize(&normal);
             cameraRay = vector_3dSubtract(&application_cameraPosition, &transformedPoints[0]);
             if(vector_3dDotProduct(&normal, &cameraRay) < 0.0)
                 continue; // Cull
@@ -268,21 +274,29 @@ static void application_update(void)
 
             /* Scale Projected Point For Screen */
             triangle.points[j].x *= (width / 2.0);
-            triangle.points[j].y *= (height / 2.0);
             triangle.points[j].x += (width / 2.0);
+            triangle.points[j].y *= -1; // Screen Has Inverted Ys (Grows Downward) Compared To Object File (Grows Upward)
+            triangle.points[j].y *= (height / 2.0);
             triangle.points[j].y += (height / 2.0);
         }
+        triangle.averageDepth /= 3; // Average
+
+        /* Triangle Color */
         if(application_fillTriangle)
         {
             /* Light Intensity Is Based On How Aligned Face Normal Is With Inverse Of Light Ray */
-            factor = -vector_3dDotProduct(&normal, &application_globalLight.direction);
+            if(application_shade)
+                factor = -vector_3dDotProduct(&normal, &application_light.direction);
+            else
+                factor = 1.0;
             triangle.color = light_applyIntensity(application_objectColor[application_objectColorIndex], factor);
         }
         else
         {
             triangle.color = 0xFFFFFFFF; // White
         }
-        triangle.averageDepth /= 3; // Average
+        
+        /* Copy Triangle */
         triangles[triangleCount++] = triangle;
     }
 
