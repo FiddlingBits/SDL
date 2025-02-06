@@ -36,6 +36,9 @@
     <ClCompile Include="Source\matrix.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\light.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\display.h">
@@ -54,6 +57,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

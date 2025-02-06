@@ -10,6 +10,7 @@
  ****************************************************************************************************/
 
 #include "display.h"
+#include "light.h"
 #include <math.h>
 #include "matrix.h"
 #include "mesh.h"
@@ -17,6 +18,7 @@
 #include <SDL.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include "triangle.h"
 #include "vector.h"
@@ -29,10 +31,13 @@ static bool application_backFaceDisplay;
 static bool application_fillTriangle;
 static double application_fov;
 static double application_fovZoomIncrement;
+static light_light application_globalLight;
 static bool application_isRunning;
 static bool application_zoom;
 static vector_3d application_cameraPosition;
 static obj_object application_object;
+static uint32_t application_objectColor[4];
+static int application_objectColorIndex;
 static vector_3d application_objectRotation;
 static vector_3d application_objectTranslate;
 static double application_objectTranslateAngle;
@@ -93,6 +98,8 @@ static void application_processInput(void)
                 application_isRunning = false;
             else if(event.key.keysym.sym == SDLK_b)
                 application_backFaceDisplay = !application_backFaceDisplay;
+            else if(event.key.keysym.sym == SDLK_c)
+                application_objectColorIndex = (application_objectColorIndex + 1) % (sizeof(application_objectColor) / sizeof(application_objectColor[0]));
             else if(event.key.keysym.sym == SDLK_f)
                 application_fillTriangle = !application_fillTriangle;
             else if(event.key.keysym.sym == SDLK_z)
@@ -125,9 +132,22 @@ static void application_setUp(void)
     application_fov = APPLICATION_FOV;
     application_fovZoomIncrement = 0.1;
 
+    /* Global Light */
+    application_globalLight.direction.x = 0.0;
+    application_globalLight.direction.y = 0.0;
+    application_globalLight.direction.z = 1.0;
+    application_globalLight.direction = vector_3dNormalize(&application_globalLight.direction);
+
     /* OBJ File */
     if(application_isRunning)
         application_isRunning = obj_parse("./Asset/cube.obj", &application_object);
+
+    /* Object Color */
+    application_objectColor[0] = 0xFFFF0000; // Red
+    application_objectColor[1] = 0xFF00FF00; // Green
+    application_objectColor[2] = 0xFF0000FF; // Blue
+    application_objectColor[3] = 0xFFFFFFFF; // White
+    application_objectColorIndex = 0;
 
     /* Object Rotation */
     application_objectRotation.x = 0.0;
@@ -154,6 +174,7 @@ static void application_tearDown(void)
 static void application_update(void)
 {
     vector_3d cameraRay, crossVector[2], facePoints[3], normal, transformedPoints[3];
+    double factor;
     int height, i, j, width, triangleCount;
     matrix_4x4 perspectiveMatrix, rotateXMatrix, rotateYMatrix, rotateZMatrix, scaleMatrix, translateMatrix, worldMatrix;
     triangle_triangle triangle, *triangles;
@@ -252,9 +273,15 @@ static void application_update(void)
             triangle.points[j].y += (height / 2.0);
         }
         if(application_fillTriangle)
-            triangle.color = application_object.faceColor[i];
+        {
+            /* Light Intensity Is Based On How Aligned Face Normal Is With Inverse Of Light Ray */
+            factor = -vector_3dDotProduct(&normal, &application_globalLight.direction);
+            triangle.color = light_applyIntensity(application_objectColor[application_objectColorIndex], factor);
+        }
         else
+        {
             triangle.color = 0xFFFFFFFF; // White
+        }
         triangle.averageDepth /= 3; // Average
         triangles[triangleCount++] = triangle;
     }

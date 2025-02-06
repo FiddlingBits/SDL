@@ -8,27 +8,21 @@
  * Include
  ****************************************************************************************************/
 
-#include <stdbool.h>
 #include <stdint.h>
-#include "triangle.h"
 #include "vector.h"
 
 /****************************************************************************************************
  * Structure
  ****************************************************************************************************/
 
-/*** Object ***/
+/*** Light ***/
 typedef struct
 {
-    int nFace;
-    triangle_face* face;
-    int nVertex;
-    vector_3d* vertex;
-} obj_object;
+    vector_3d direction;
+} light_light;
 
 /****************************************************************************************************
  * Function Prototype
  ****************************************************************************************************/
 
-extern void obj_destroy(obj_object* const object);
-extern bool obj_parse(const char* const Path, obj_object* const object);
+extern uint32_t light_applyIntensity(const uint32_t Color, const double Factor);
